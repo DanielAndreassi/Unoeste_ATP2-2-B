@@ -84,7 +84,7 @@ void relatorioFornecedores(void);
 // aumentoDePreco();
 
 // #FUNCOES DE CLIENTES#
-int buscaClientesExaustiva(FILE *PtrClintes, int codCli);
+int buscaClientesExaustiva(FILE *PtrClintes, long long int cpfCli);
 void cadastroCliente(void);
 void consultaClientes(void);
 // exclusaoClientes();
@@ -323,7 +323,7 @@ void efetuarVenda(void)
                 tpProduto v[100], prod;
                 int qtd[100], tl = 0;
 
-                printf("Digite o codigo do produto que deseja vender, digite 0 para sair: ");
+                printf("\nDigite o codigo do produto que deseja vender, digite 0 para sair: ");
                 scanf("%d", &prod.codProd);
                 while (prod.codProd != 0)
                 {
@@ -371,12 +371,13 @@ void efetuarVenda(void)
                     printf("\nProdutos: ");
                     for (int i = 0; i < tl; i++)
                     {
-                        printf("\nDescricao: ");
+                        printf("\n\nDescricao: ");
                         puts(v[i].descricao);
                         printf("Preco: R$ %.2f", v[i].preco);
                         printf("\nQuantidade: %d", qtd[i]);
                         total += v[i].preco * qtd[i];
                     }
+                    printf("\nTotal: %.2f", total);
                     printf("\nConfirma compra? (S/N): ");
                     char confirma = toupper(getche());
                     if (confirma == 'S')
@@ -385,7 +386,14 @@ void efetuarVenda(void)
                         struct tm *infoTempo;
                         time(&agora);
                         infoTempo = localtime(&agora);
-
+                        if (posCliente == -1)
+                        {
+                            fseek(ptrClientes, 0, 2);
+                        }
+                        else
+                        {
+                            fseek(ptrClientes, posCliente, 0);
+                        }
                         cliente.qtdeCompras += 1;
                         cliente.valorTotalComprado += total;
                         fwrite(&cliente, sizeof(tpCliente), 1, ptrClientes);
@@ -472,8 +480,8 @@ void cupomFiscalDeVenda(void)
                 fread(&venda, sizeof(tpVenda), 1, ptrVendas);
                 printf("\nVenda:\n");
                 printf("Codigo da venda: %d", venda.codVenda);
+
                 int posCliente = buscaClientesExaustiva(ptrClientes, venda.cpfCliente);
-                printf("\nPOS CLIENTE %d", posCliente);
                 fseek(ptrClientes, posCliente, 0);
                 fread(&cliente, sizeof(tpCliente), 1, ptrClientes);
                 printf("\nCliente: ");
@@ -484,18 +492,15 @@ void cupomFiscalDeVenda(void)
                 recuperarProdutosDeUmaVenda(v, tl, venda.codVenda, ptrVendasProdutos);
                 tpProduto prod;
                 tpFornecedor forn;
-                printf("\nTL %d", tl);
                 for (int i = 0; i < tl; i++)
                 {
-                    printf("\nVENDAS PRODUTOS %d", v[i].codProd);
                     int posProd = buscaProdutoExaustiva(ptrProdutos, v[i].codProd);
-                    printf("\nPOS PROD %d", posProd);
                     fseek(ptrProdutos, posProd, 0);
                     fread(&prod, sizeof(tpProduto), 1, ptrProdutos);
                     int posForn = buscaFornecedorExaustiva(ptrFornecedores, prod.codForn);
                     fseek(ptrFornecedores, posForn, 0);
                     fread(&forn, sizeof(tpFornecedor), 1, ptrFornecedores);
-                    printf("\n%d\t%s\tR$ %.2f\t%s", prod.codProd, prod.descricao, v[i].qtde, v[i].valorUnitario, forn.nomeForn);
+                    printf("\n%d\t%s\t%d\tR$ %.2f\t%s", prod.codProd, prod.descricao, v[i].qtde, v[i].valorUnitario, forn.nomeForn);
                 }
                 printf("\nTotal R$ %.2f", venda.totalVendas);
             }
@@ -1054,17 +1059,17 @@ void relatorioFornecedores(void)
 
 // #FUNÇÕES DE CLIENTES
 
-int buscaClientesExaustiva(FILE *PtrClintes, int cpfCli)
+int buscaClientesExaustiva(FILE *PtrClintes, long long int cpfCli)
 {
     tpCliente R;
     rewind(PtrClintes);
 
     fread(&R, sizeof(tpCliente), 1, PtrClintes);
-    while (!feof(PtrClintes) && !(cpfCli == R.cpfCliente && R.ativo == 1))
+    while (!feof(PtrClintes) && !(cpfCli != R.cpfCliente || R.ativo != 1))
         fread(&R, sizeof(tpCliente), 1, PtrClintes);
 
     if (!feof(PtrClintes))
-        return ftell(PtrClintes) - sizeof(tpProduto);
+        return ftell(PtrClintes) - sizeof(tpCliente);
     else
         return -1;
 }
@@ -1075,6 +1080,7 @@ void cadastroCliente(void)
     tpCliente cliente;
     FILE *ptr = fopen("clientes.bat", "rb+");
 
+    system("cls");
     if (ptr == NULL)
         printf("\nErro na abertura do arquivo!!\n");
     else
@@ -1087,7 +1093,7 @@ void cadastroCliente(void)
 
             int pos = buscaClientesExaustiva(ptr, cliente.cpfCliente);
 
-            if (pos == -1)
+            if (pos != -1)
                 printf("\nCliente ja cadastrado!!\n");
             else
             {
@@ -1110,12 +1116,14 @@ void cadastroCliente(void)
         }
     }
     fclose(ptr);
+    exibirMoldura();
 }
 
 void consultaClientes(void)
 {
     FILE *ptr = fopen("clientes.bat", "rb");
     tpCliente R;
+    system("cls");
     if (ptr == NULL)
         printf("\nNao a clientes para consulta\n");
     else
@@ -1132,7 +1140,7 @@ void consultaClientes(void)
             else
             {
                 fseek(ptr, pos, 0);
-                fread(ptr, sizeof(tpCliente), 1, ptr);
+                fread(&R, sizeof(tpCliente), 1, ptr);
                 printf("\nCPF do cliente: %lld\n", R.cpfCliente);
                 printf("\nNome do cliente: %s\n", R.nomeCliente);
                 printf("\nquantidade de comprar feitas: %d\n", R.qtdeCompras);
@@ -1144,6 +1152,7 @@ void consultaClientes(void)
         }
     }
     fclose(ptr);
+    exibirMoldura();
 }
 
 // #FUNÇÕES AUXILIARES
@@ -1198,17 +1207,23 @@ void insercaoAutomDeDados(void)
     Cliente.cpfCliente = 73959525028;
     Cliente.ativo = 1;
     strcpy(Cliente.nomeCliente, "Vitinho");
+    Cliente.qtdeCompras = 1;
+    Cliente.valorTotalComprado = 10000;
     fwrite(&Cliente, sizeof(tpCliente), 1, PtrClientes);
 
     fseek(PtrClientes, 0, 2);
     Cliente.cpfCliente = 38989178860;
     Cliente.ativo = 1;
+    Cliente.valorTotalComprado = 4556.60;
+    Cliente.qtdeCompras = 1;
     strcpy(Cliente.nomeCliente, "Daniel Andreassi");
     fwrite(&Cliente, sizeof(tpCliente), 1, PtrClientes);
 
     fseek(PtrClientes, 0, 2);
     Cliente.cpfCliente = 15577433045;
     Cliente.ativo = 1;
+    Cliente.valorTotalComprado = 0;
+    Cliente.qtdeCompras = 0;
     strcpy(Cliente.nomeCliente, "fernandinho");
     fwrite(&Cliente, sizeof(tpCliente), 1, PtrClientes);
 
@@ -1360,7 +1375,7 @@ void insercaoAutomDeDados(void)
     fwrite(&VendasProds, sizeof(tpVendasProdutos), 1, PtrVendas_Produtos);
     //
     fseek(PtrVendas_Produtos, 0, 2);
-    VendasProds.codVenda = 2;
+    VendasProds.codVenda = 3;
     VendasProds.codProd = 21;
     VendasProds.qtde = 10;
     VendasProds.valorUnitario = 4000;
@@ -1374,7 +1389,8 @@ void insercaoAutomDeDados(void)
     Venda.data.m = 3;
     Venda.data.d = 19;
     Venda.ativo = 1;
-    fwrite(&Venda, sizeof(tpVenda), 1, PtrVendas);
+    Venda.totalVendas =
+        fwrite(&Venda, sizeof(tpVenda), 1, PtrVendas);
     //
     fseek(PtrVendas, 0, 2);
     Venda.codVenda = 2;
@@ -1386,7 +1402,7 @@ void insercaoAutomDeDados(void)
     fwrite(&Venda, sizeof(tpVenda), 1, PtrVendas);
     //
     fseek(PtrVendas, 0, 2);
-    Venda.codVenda = 2;
+    Venda.codVenda = 3;
     Venda.cpfCliente = 38989178860;
     Venda.data.a = 2023;
     Venda.data.m = 11;
