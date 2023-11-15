@@ -76,19 +76,20 @@ void relatorioProdutos(int veioDeVendas);
 
 // #FUNCOES DE FORNECEDORES#
 int buscaFornecedorExaustiva(FILE *ptr, int codForn);
+int buscaProdutoPorFornecedor (FILE *ptr,int codForn);
 void cadastroFornecedores(void);
 void consultaFornecedores(void);
 void alteracaoFornecedores(void);
 void relatorioFornecedores(void);
 // exclusaoForn();
-// aumentoDePreco();
+void AumentoDePreco ();
 
 // #FUNCOES DE CLIENTES#
 int buscaClientesExaustiva(FILE *PtrClintes, long long int cpfCli);
 void cadastroCliente(void);
 void consultaClientes(void);
 // exclusaoClientes();
-// alteracaoClientes();
+void alteraCliente ();
 // relatorioClientes();
 
 // #FUNCOES AUXILIARES#
@@ -96,9 +97,6 @@ int jaEstaContidoNoVetor(tpProduto v[100], int codProd, int tl);
 void auxAcharProdutosDoFornecedor(int &tl, FILE *ptr, int codForn, tpProduto produtos[50]);
 void insercaoAutomDeDados(void);
 void executar(void);
-// fazer cupom fiscal
-// todas as funcoes do executar estao declaradas mas sem tipo e sem paramentros, pois ainda nao foram feitas
-// fazer buscas,remanejamneto de dados, ordenacao, relatorios, exclusoes, alteracoes, cadastros, consultas, etc
 
 // #FUNÇÕES DE MOLDURA
 void moldura(int CI, int LI, int CF, int LF, int CorT, int CorF)
@@ -534,6 +532,29 @@ void recuperarProdutosDeUmaVenda(tpVendasProdutos v[50], int &tl, int codVenda, 
     }
 }
 
+void RelatorioDeVendas (void) {
+    FILE * ptrClientes = fopen("clientes.bat","rb");
+    FILE * ptrFornecedores = fopen("forncedores.bat","rb");
+    FILE * ptrProdutos = fopen ("fornecedores.bat","rb");
+    FILE * ptrVendas = fopen  ("vendas.bat","rb");
+    FILE * ptrVendasProds = fopen ("vendas_produtos", "rb");
+
+    int aux=1;
+    printf("\nRelatorio de vendas\n");
+
+    rewind(ptrVendas);
+    if(!feof(ptrVendas)) {
+         
+        
+    }
+
+
+    fclose(ptrClientes);
+    fclose(ptrFornecedores);
+    fclose(ptrProdutos);
+    fclose(ptrVendas);
+    fclose(ptrVendasProds);
+}
 // #FUNÇÕES DE PRODUTOS#
 int buscaProdutoExaustiva(FILE *ptr, int codProd)
 {
@@ -1057,6 +1078,60 @@ void relatorioFornecedores(void)
     exibirMoldura();
 }
 
+int buscaProdutoPorFornecedor (FILE *ptr,int codForn) {
+    tpProduto R;
+
+    rewind(ptr);
+    fread(&R,sizeof(tpProduto),1,ptr);
+    while(!feof && codForn == R.codForn) {
+        fread(&R,sizeof(tpProduto),1,ptr);
+    }
+    if(!feof) return ftell(ptr) - sizeof(tpProduto);
+    else return -1;
+}
+
+void AumentoDePreco () {
+    FILE *ptrForn = fopen("fornecedores.bat","rb+");
+    FILE *ptrProd = fopen("produtos.bat","rb+");
+    tpProduto RegProd;
+    int aux;
+    system("cls");
+    printf("\nDigite o codigo do fornecedor para aumentar o preco dos produtos: \n");
+    scanf("%d",&aux);
+    while(aux > 0) {
+        int pos=buscaFornecedorExaustiva(ptrForn,aux);
+        if(pos == -1) {
+            printf("\nFornecedor inexixtente\n");
+            getche();
+        }
+        else {
+            float porcent;
+            printf("Digite a porcentagem a ser aumentada nos produtos: ");
+            scanf("%f",&porcent);
+            if(toupper(getche())=='S') {
+                int busca=buscaProdutoPorFornecedor(ptrProd,RegProd.codForn);
+                fseek(ptrProd,busca,0); 
+                fread(&RegProd,sizeof(tpProduto),1,ptrProd);
+                while(!feof) {
+                    fseek(ptrProd,busca,0);
+                    fwrite(&RegProd,sizeof(tpProduto),1,ptrProd);
+                    if(RegProd.codForn==aux)
+                    {
+                        RegProd.preco+=porcent/100*RegProd.preco;
+                        fwrite(&RegProd,sizeof(tpProduto),1,ptrProd);
+                    }
+                    fread(&RegProd,sizeof(tpProduto),1,ptrProd);
+                }
+            }
+            else {
+                printf("\nAumento de preco abortado!!\n");
+                getch();
+            }
+        }
+    }
+    fclose(ptrForn);
+    fclose(ptrProd);
+}
 // #FUNÇÕES DE CLIENTES
 
 int buscaClientesExaustiva(FILE *PtrClintes, long long int cpfCli)
@@ -1074,7 +1149,6 @@ int buscaClientesExaustiva(FILE *PtrClintes, long long int cpfCli)
         return -1;
 }
 
-// adicionei campo ativo ou inativo
 void cadastroCliente(void)
 {
     tpCliente cliente;
@@ -1155,6 +1229,68 @@ void consultaClientes(void)
     exibirMoldura();
 }
 
+void relatorioClientes () {
+    FILE *ptr = fopen("clientes.bat","rb");
+    tpCliente R;
+    system("cls");
+
+    if(ptr == NULL) {
+        printf("\nNao foi possivel abrir o arquivo\n");
+        getch();
+    }
+    else {
+        printf("\nRelatorio de clientes!\n");
+
+        rewind(ptr);
+        fread(&R,sizeof(tpCliente),1,ptr);
+
+        while(!feof(ptr)) {
+            if(R.ativo == '1') {
+                printf("\nCPF do cliente: %lld\n",R.cpfCliente);
+                puts(R.nomeCliente);
+                printf("\nQuantidade de compras: %d\n");
+                printf("\nValor total comprado: %.2f",R.valorTotalComprado);
+            }
+        }
+    }
+    fclose(ptr);
+}
+
+void alteraCliente (void) {
+    FILE *ptr = fopen("clientes.bat","rb+");
+    tpCliente registro;
+
+    system("cls");
+    
+    if(ptr == NULL) {
+        printf("\nNao foi possivel de abrir o arquivo!\n");
+        getch();
+    }
+    else {
+        
+        while(registro.cpfCliente > 0) {
+            printf("\nDigite o CPF do cliente a ser alterado: ");
+            scanf("%lld",&registro.cpfCliente);
+
+            int pos=buscaClientesExaustiva(ptr,registro.cpfCliente);
+            if(pos==-1) {
+                printf("\ncliente nao encontrado\n");
+                getch();
+            }
+            else {
+                printf("\nDigite o novo nome do cliente: ");
+                gets(registro.nomeCliente);
+                fread(&registro,sizeof(tpCliente),1,ptr);
+                fseek(ptr,pos,0);
+                fwrite(&registro,sizeof(tpCliente),1,ptr);
+
+                printf("\nCliente alterado com sucesso!!\n");
+            }
+            printf("\nDigite o CPF para alterar outro cliente ou (0) para sair!\n");
+        }
+    }
+    fclose(ptr);
+}
 // #FUNÇÕES AUXILIARES
 
 int jaEstaContidoNoVetor(tpProduto v[100], int codProd, int tl)
@@ -1495,9 +1631,9 @@ void executar(void)
                 case 'E':
                     relatorioFornecedores();
                     break;
-                    // case 'F':
-                    //     aumentoDePreco();
-                    //     break;
+                case 'F':
+                    AumentoDePreco();
+                    break;
                 }
             } while (opMenuFornecedores != 27);
             break;
@@ -1517,12 +1653,12 @@ void executar(void)
                     // case 'C':
                     //     exclusaoClientes();
                     //     break;
-                    // case 'D':
-                    //     alteracaoClientes();
-                    //     break;
-                    // case 'E':
-                    //     relatorioClientes();
-                    //     break;
+                case 'D':
+                    alteraCliente();
+                    break;
+                case 'E':
+                    relatorioClientes();
+                    break;
                 }
             } while (opMenuClientes != 27);
             break;
