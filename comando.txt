@@ -1,0 +1,1 @@
+touch produtos.bat && touch clientes.bat && touch vendas.bat && touch vendas_produtos.bat && touch fornecedores.bat

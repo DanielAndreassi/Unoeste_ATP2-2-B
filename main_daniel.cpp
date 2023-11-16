@@ -1135,7 +1135,7 @@ void consultaClientes(void)
             else
             {
                 fseek(ptr, pos, 0);
-                fread(&R,sizeof(tpCliente), 1, ptr);
+                fread(&R, sizeof(tpCliente), 1, ptr);
                 printf("\nCPF do cliente: %lld\n", R.cpfCliente);
                 printf("\nNome do cliente: %s\n", R.nomeCliente);
                 printf("\nquantidade de comprar feitas: %d\n", R.qtdeCompras);
@@ -1202,23 +1202,23 @@ void insercaoAutomDeDados(void)
     Cliente.cpfCliente = 73959525028;
     Cliente.ativo = 1;
     strcpy(Cliente.nomeCliente, "Vitinho");
-    Cliente.qtdeCompras=1;
-    Cliente.valorTotalComprado=10000;
+    Cliente.qtdeCompras = 1;
+    Cliente.valorTotalComprado = 10000;
     fwrite(&Cliente, sizeof(tpCliente), 1, PtrClientes);
 
     fseek(PtrClientes, 0, 2);
     Cliente.cpfCliente = 38989178860;
     Cliente.ativo = 1;
-    Cliente.valorTotalComprado=4556.60;
-    Cliente.qtdeCompras=1;
+    Cliente.valorTotalComprado = 4556.60;
+    Cliente.qtdeCompras = 1;
     strcpy(Cliente.nomeCliente, "Daniel Andreassi");
     fwrite(&Cliente, sizeof(tpCliente), 1, PtrClientes);
 
     fseek(PtrClientes, 0, 2);
     Cliente.cpfCliente = 15577433045;
     Cliente.ativo = 1;
-    Cliente.valorTotalComprado=0;
-    Cliente.qtdeCompras=0;
+    Cliente.valorTotalComprado = 0;
+    Cliente.qtdeCompras = 0;
     strcpy(Cliente.nomeCliente, "fernandinho");
     fwrite(&Cliente, sizeof(tpCliente), 1, PtrClientes);
 
@@ -1384,8 +1384,8 @@ void insercaoAutomDeDados(void)
     Venda.data.m = 3;
     Venda.data.d = 19;
     Venda.ativo = 1;
-    Venda.totalVendas=
-    fwrite(&Venda, sizeof(tpVenda), 1, PtrVendas);
+    Venda.totalVendas =
+        fwrite(&Venda, sizeof(tpVenda), 1, PtrVendas);
     //
     fseek(PtrVendas, 0, 2);
     Venda.codVenda = 2;

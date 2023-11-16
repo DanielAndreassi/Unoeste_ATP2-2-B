@@ -84,7 +84,7 @@ void relatorioFornecedores(void);
 // aumentoDePreco();
 
 // #FUNCOES DE CLIENTES#
-int buscaClientesExaustiva(FILE *PtrClintes, long long int codCli);
+int buscaClientesExaustiva(FILE *PtrClintes, long long int cpfCli);
 void cadastroCliente(void);
 void consultaClientes(void);
 // exclusaoClientes();
@@ -817,18 +817,15 @@ void relatorioProdutos(int veioDeVendas = 0)
         }
         fclose(ptrProdutos);
         fclose(ptrFornecedores);
-        printf("\n-----------------------------------------------------------------------------------");
+        printf("-----------------------------------------------------------------------------------");
         if (veioDeVendas == 0)
         {
             printf("\nTecle algo para voltar");
             getch();
         }
     }
-    if (veioDeVendas == 0)
-    {
-        system("cls");
-        exibirMoldura();
-    }
+    system("cls");
+    exibirMoldura();
 }
 
 // #FUNÇÕES DE FORNECEDORES
@@ -1068,7 +1065,7 @@ int buscaClientesExaustiva(FILE *PtrClintes, long long int cpfCli)
     rewind(PtrClintes);
 
     fread(&R, sizeof(tpCliente), 1, PtrClintes);
-    while (!feof(PtrClintes) && cpfCli != R.cpfCliente && R.ativo != 1)
+    while (!feof(PtrClintes) && !(cpfCli != R.cpfCliente || R.ativo != 1))
         fread(&R, sizeof(tpCliente), 1, PtrClintes);
 
     if (!feof(PtrClintes))
@@ -1083,6 +1080,7 @@ void cadastroCliente(void)
     tpCliente cliente;
     FILE *ptr = fopen("clientes.bat", "rb+");
 
+    system("cls");
     if (ptr == NULL)
         printf("\nErro na abertura do arquivo!!\n");
     else
@@ -1095,7 +1093,7 @@ void cadastroCliente(void)
 
             int pos = buscaClientesExaustiva(ptr, cliente.cpfCliente);
 
-            if (pos == -1)
+            if (pos != -1)
                 printf("\nCliente ja cadastrado!!\n");
             else
             {
@@ -1118,12 +1116,14 @@ void cadastroCliente(void)
         }
     }
     fclose(ptr);
+    exibirMoldura();
 }
 
 void consultaClientes(void)
 {
     FILE *ptr = fopen("clientes.bat", "rb");
     tpCliente R;
+    system("cls");
     if (ptr == NULL)
         printf("\nNao a clientes para consulta\n");
     else
@@ -1140,7 +1140,7 @@ void consultaClientes(void)
             else
             {
                 fseek(ptr, pos, 0);
-                fread(ptr, sizeof(tpCliente), 1, ptr);
+                fread(&R, sizeof(tpCliente), 1, ptr);
                 printf("\nCPF do cliente: %lld\n", R.cpfCliente);
                 printf("\nNome do cliente: %s\n", R.nomeCliente);
                 printf("\nquantidade de comprar feitas: %d\n", R.qtdeCompras);
@@ -1152,6 +1152,7 @@ void consultaClientes(void)
         }
     }
     fclose(ptr);
+    exibirMoldura();
 }
 
 // #FUNÇÕES AUXILIARES
@@ -1205,19 +1206,24 @@ void insercaoAutomDeDados(void)
     fseek(PtrClientes, 0, 2);
     Cliente.cpfCliente = 73959525028;
     Cliente.ativo = 1;
-    Cliente.qtdeCompras = 1;
     strcpy(Cliente.nomeCliente, "Vitinho");
+    Cliente.qtdeCompras = 1;
+    Cliente.valorTotalComprado = 10000;
     fwrite(&Cliente, sizeof(tpCliente), 1, PtrClientes);
 
     fseek(PtrClientes, 0, 2);
     Cliente.cpfCliente = 38989178860;
     Cliente.ativo = 1;
+    Cliente.valorTotalComprado = 4556.60;
+    Cliente.qtdeCompras = 1;
     strcpy(Cliente.nomeCliente, "Daniel Andreassi");
     fwrite(&Cliente, sizeof(tpCliente), 1, PtrClientes);
 
     fseek(PtrClientes, 0, 2);
     Cliente.cpfCliente = 15577433045;
     Cliente.ativo = 1;
+    Cliente.valorTotalComprado = 0;
+    Cliente.qtdeCompras = 0;
     strcpy(Cliente.nomeCliente, "fernandinho");
     fwrite(&Cliente, sizeof(tpCliente), 1, PtrClientes);
 
@@ -1369,7 +1375,7 @@ void insercaoAutomDeDados(void)
     fwrite(&VendasProds, sizeof(tpVendasProdutos), 1, PtrVendas_Produtos);
     //
     fseek(PtrVendas_Produtos, 0, 2);
-    VendasProds.codVenda = 2;
+    VendasProds.codVenda = 3;
     VendasProds.codProd = 21;
     VendasProds.qtde = 10;
     VendasProds.valorUnitario = 4000;
@@ -1383,7 +1389,8 @@ void insercaoAutomDeDados(void)
     Venda.data.m = 3;
     Venda.data.d = 19;
     Venda.ativo = 1;
-    fwrite(&Venda, sizeof(tpVenda), 1, PtrVendas);
+    Venda.totalVendas =
+        fwrite(&Venda, sizeof(tpVenda), 1, PtrVendas);
     //
     fseek(PtrVendas, 0, 2);
     Venda.codVenda = 2;
