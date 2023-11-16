@@ -90,7 +90,7 @@ void cadastroCliente(void);
 void consultaClientes(void);
 // exclusaoClientes();
 void alteraCliente ();
-// relatorioClientes();
+void relatorioClientes();
 
 // #FUNCOES AUXILIARES#
 int jaEstaContidoNoVetor(tpProduto v[100], int codProd, int tl);
@@ -1140,7 +1140,7 @@ int buscaClientesExaustiva(FILE *PtrClintes, long long int cpfCli)
     rewind(PtrClintes);
 
     fread(&R, sizeof(tpCliente), 1, PtrClintes);
-    while (!feof(PtrClintes) && !(cpfCli != R.cpfCliente || R.ativo != 1))
+    while (!feof(PtrClintes) && !(cpfCli == R.cpfCliente && R.ativo == 1))
         fread(&R, sizeof(tpCliente), 1, PtrClintes);
 
     if (!feof(PtrClintes))
@@ -1176,6 +1176,7 @@ void cadastroCliente(void)
                 gets(cliente.nomeCliente);
                 cliente.qtdeCompras = 0;
                 cliente.valorTotalComprado = 0;
+                cliente.ativo=1;
                 printf("\nConfirma cadastro (S/N): ");
                 if (toupper(getche()) == 'S')
                 {
@@ -1243,17 +1244,19 @@ void relatorioClientes () {
 
         rewind(ptr);
         fread(&R,sizeof(tpCliente),1,ptr);
-
-        while(!feof(ptr)) {
-            if(R.ativo == '1') {
-                printf("\nCPF do cliente: %lld\n",R.cpfCliente);
-                puts(R.nomeCliente);
-                printf("\nQuantidade de compras: %d\n");
-                printf("\nValor total comprado: %.2f",R.valorTotalComprado);
-            }
+        while(!feof(ptr) && R.ativo==1) {
+            printf("\nCPF do cliente: %lld\n",R.cpfCliente);
+            puts(R.nomeCliente);
+            printf("\nQuantidade de compras: %d\n",R.qtdeCompras);
+            printf("\nValor total comprado: %.2f",R.valorTotalComprado);
+            fread(&R,sizeof(tpCliente),1,ptr);
+            getch();
         }
+        fclose(ptr);
     }
-    fclose(ptr);
+    
+    system("cls");
+    exibirMoldura();
 }
 
 void alteraCliente (void) {
@@ -1676,3 +1679,23 @@ int main()
     gotoxy(3, 26);
     return 0;
 }
+
+
+// oque falta:
+// para arranjos desordenados
+// Busca Exaustiva; a definir aonde sera usado
+// Busca Exaustiva com Sentinela. a definir aonde sera usado
+
+// Arranjos Ordenados
+// Busca Sequencial Indexada: Clientes
+// Busca Binária: Produtos
+
+// metodos de ordenacao
+// Inserção Direta (Insertion Sort): Produtos
+// Ordenação por Bolhas (Bubble Sort): Clientes
+// Seleção Direta (Selection Sort): Fornecedores
+
+//exclusao fisica ao encerar programa
+//exclusao logica quando o usuario solicitar
+
+//Relatorio de vendas(buiu)
