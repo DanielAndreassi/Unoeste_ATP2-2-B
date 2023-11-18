@@ -72,6 +72,7 @@ void cadastroProdutos(void);
 void consultaProdutos(void);
 void alteracaoProdutos(void);
 void relatorioProdutos(int veioDeVendas);
+void ordenarProdutosPorPreco(void);
 // exclusaoProdutos();
 
 // #FUNCOES DE FORNECEDORES#
@@ -86,11 +87,12 @@ void aumentoDePreco();
 
 // #FUNCOES DE CLIENTES#
 int buscaClientesExaustiva(FILE *PtrClintes, long long int cpfCli);
-void cadastroCliente(void);
+int bucaClientesBinaria(FILE *PtrClintes, long long int cpfCli);
+void cadastroClienteInsercaoDireta(void);
 void consultaClientes(void);
 // exclusaoClientes();
-void alteraCliente();
-void relatorioClientes();
+void alteraCliente(void);
+void relatorioClientes(void);
 
 // #FUNCOES AUXILIARES#
 int jaEstaContidoNoVetor(tpProduto v[100], int codProd, int tl);
@@ -184,8 +186,10 @@ char menuProdutos(void)
     gotoxy(2, 12);
     printf("[E] Relatorio de Produtos");
     gotoxy(2, 13);
-    printf("[ESC] Voltar para menu principal");
+    printf("[F] Ordenar Produtos por Preco");
     gotoxy(2, 14);
+    printf("[ESC] Voltar para menu principal");
+    gotoxy(2, 15);
     printf("Opcao desejada: ");
     return toupper(getche());
 }
@@ -218,7 +222,7 @@ char menuClientes(void)
     gotoxy(27, 3);
     printf("### MENU CLIENTES ###");
     gotoxy(2, 8);
-    printf("[A] Cadastro de Clientes");
+    printf("[A] Cadastro de Clientes por Insercao Direta");
     gotoxy(2, 9);
     printf("[B] Consulta de Clientes");
     gotoxy(2, 10);
@@ -524,7 +528,7 @@ void recuperarProdutosDeUmaVenda(tpVendasProdutos v[50], int &tl, int codVenda, 
     fread(&vend_prod, sizeof(tpVendasProdutos), 1, ptrVendasProdutos);
     while (!feof(ptrVendasProdutos))
     {
-        if (vend_prod.codVenda == codVenda)
+        if (vend_prod.codVenda == codVenda && vend_prod.ativo == 1)
         {
             v[tl] = vend_prod;
             tl++;
@@ -895,6 +899,51 @@ void relatorioProdutos(int veioDeVendas = 0)
     }
 }
 
+void ordenarProdutosPorPreco(void)
+{
+    system("cls");
+    int a, b, QtdeReg;
+    tpProduto RA, RB;
+
+    FILE *ptrProdutos = fopen("produtos.bat", "rb+");
+    printf("\n### ORDENACAO DE PRODUTOS POR PRECO CRESCENTE ###\n");
+
+    if (ptrProdutos == NULL) // O Arquivo n�o existe!
+    {
+        printf("\nErro de abertura, digite algo para sair: \n");
+        getch();
+    }
+    else
+    {
+        fseek(ptrProdutos, 0, 2);
+        QtdeReg = ftell(ptrProdutos) / sizeof(tpProduto);
+
+        for (a = 0; a < QtdeReg - 1; a++)
+            for (b = a + 1; b < QtdeReg; b++)
+            {
+                fseek(ptrProdutos, a * sizeof(tpProduto), 0);
+                fread(&RA, sizeof(tpProduto), 1, ptrProdutos);
+
+                fseek(ptrProdutos, b * sizeof(tpProduto), 0);
+                fread(&RB, sizeof(tpProduto), 1, ptrProdutos);
+
+                if (RA.preco > RB.preco)
+                {
+                    fseek(ptrProdutos, a * sizeof(tpProduto), 0);
+                    fwrite(&RB, sizeof(tpProduto), 1, ptrProdutos);
+
+                    fseek(ptrProdutos, b * sizeof(tpProduto), 0);
+                    fwrite(&RA, sizeof(tpProduto), 1, ptrProdutos);
+                }
+            }
+        fclose(ptrProdutos);
+        printf("\nArquivo Ordenado, digite algo para sair: ");
+        getch();
+    }
+    system("cls");
+    exibirMoldura();
+}
+
 // #FUNÇÕES DE FORNECEDORES
 int buscaFornecedorExaustiva(FILE *ptr, int codForn)
 {
@@ -1206,14 +1255,45 @@ int buscaClientesExaustiva(FILE *PtrClintes, long long int cpfCli)
         return -1;
 }
 
-void cadastroCliente(void)
+int bucaClientesBinaria(FILE *PtrClintes, long long int cpfCli)
 {
-    tpCliente cliente;
+
+    fseek(PtrClintes, 0, 2);
+    int fim = (ftell(PtrClintes) / sizeof(tpCliente)) - 1, inicio = 0;
+    printf("FIM %d, INICIO %d", fim, inicio);
+    while (inicio <= fim)
+    {
+        int meio = (inicio + fim) / 2;
+        fseek(PtrClintes, meio * sizeof(tpCliente), 0);
+        tpCliente cliente;
+        fread(&cliente, sizeof(tpCliente), 1, PtrClintes);
+        if (cliente.cpfCliente == cpfCli)
+        {
+            return ftell(PtrClintes) - sizeof(tpCliente);
+        }
+        else if (cliente.cpfCliente < cpfCli)
+        {
+            inicio = meio + 1;
+        }
+        else
+        {
+            fim = meio - 1;
+        }
+    }
+    return -1;
+}
+
+void cadastroClienteInsercaoDireta(void)
+{
+    tpCliente cliente, clienteAux;
     FILE *ptr = fopen("clientes.bat", "rb+");
 
     system("cls");
     if (ptr == NULL)
-        printf("\nErro na abertura do arquivo!!\n");
+    {
+        printf("\nErro na abertura do arquivo, digite algo para sair: ");
+        getch();
+    }
     else
     {
         printf("\nDigite o CPF para cadastro (sem pontos): \n");
@@ -1238,16 +1318,30 @@ void cadastroCliente(void)
                 if (toupper(getche()) == 'S')
                 {
                     fseek(ptr, 0, 2);
-                    fwrite(&cliente, sizeof(tpCliente), 1, ptr);
+                    int qtdeClientes = (ftell(ptr) / sizeof(tpCliente)) - 1;
+                    fseek(ptr, qtdeClientes * sizeof(tpCliente), 0);
+                    fread(&clienteAux, sizeof(tpCliente), 1, ptr);
+                    while (qtdeClientes >= 0 && stricmp(cliente.nomeCliente, clienteAux.nomeCliente) == -1)
+                    {
+                        fseek(ptr, qtdeClientes * sizeof(tpCliente), 0);
+                        fwrite(&cliente, sizeof(tpCliente), 1, ptr);
+                        fseek(ptr, (qtdeClientes + 1) * sizeof(tpCliente), 0);
+                        fwrite(&clienteAux, sizeof(tpCliente), 1, ptr);
+                        qtdeClientes--;
+                        fseek(ptr, qtdeClientes * sizeof(tpCliente), 0);
+                        fread(&clienteAux, sizeof(tpCliente), 1, ptr);
+                    }
                 }
                 else
-                    printf("\nCadastro de clientes abortado\n");
+                    printf("\nCadastro do cliente abortado\n");
             }
             printf("\nDigite outro CPF ou (0) para cancelar: ");
             scanf("%lld", &cliente.cpfCliente);
         }
+        fclose(ptr);
     }
-    fclose(ptr);
+
+    system("cls");
     exibirMoldura();
 }
 
@@ -1277,7 +1371,6 @@ void consultaClientes(void)
                 printf("\nNome do cliente: %s\n", R.nomeCliente);
                 printf("\nQuantidade de compras feitas: %d\n", R.qtdeCompras);
                 printf("\nValor total comprado: %.2f\n", R.valorTotalComprado);
-                getch();
             }
             printf("\nDigite o cpf do cliente ou (0) para sair: \n");
             scanf("%lld", &R.cpfCliente);
@@ -1287,7 +1380,7 @@ void consultaClientes(void)
     exibirMoldura();
 }
 
-void relatorioClientes()
+void relatorioClientes(void)
 {
     FILE *ptr = fopen("clientes.bat", "rb");
     tpCliente R;
@@ -1295,25 +1388,27 @@ void relatorioClientes()
 
     if (ptr == NULL)
     {
-        printf("\nNao foi possivel abrir o arquivo\n");
+        printf("\nNao foi possivel abrir o arquivo, digite algo para sair\n");
         getch();
     }
     else
     {
-        printf("\nRelatorio de clientes!\n");
+        printf("\n### RELATORIO DE CLIENTES ###\n");
 
         rewind(ptr);
         fread(&R, sizeof(tpCliente), 1, ptr);
         while (!feof(ptr) && R.ativo == 1)
         {
-            printf("\nCPF do cliente: %lld\n", R.cpfCliente);
+            printf("\n\nCPF: %lld", R.cpfCliente);
+            printf("\nNome: ");
             puts(R.nomeCliente);
-            printf("\nQuantidade de compras: %d\n", R.qtdeCompras);
+            printf("Quantidade de compras: %d", R.qtdeCompras);
             printf("\nValor total comprado: %.2f", R.valorTotalComprado);
             fread(&R, sizeof(tpCliente), 1, ptr);
-            getch();
         }
         fclose(ptr);
+        printf("\nDigite algo para sair: ");
+        getch();
     }
 
     system("cls");
@@ -1410,14 +1505,6 @@ void insercaoAutomDeDados(void)
 
     // clientes
     fseek(PtrClientes, 0, 2);
-    Cliente.cpfCliente = 73959525028;
-    Cliente.ativo = 1;
-    strcpy(Cliente.nomeCliente, "Vitinho");
-    Cliente.qtdeCompras = 1;
-    Cliente.valorTotalComprado = 10000;
-    fwrite(&Cliente, sizeof(tpCliente), 1, PtrClientes);
-
-    fseek(PtrClientes, 0, 2);
     Cliente.cpfCliente = 38989178860;
     Cliente.ativo = 1;
     Cliente.valorTotalComprado = 4556.60;
@@ -1431,6 +1518,14 @@ void insercaoAutomDeDados(void)
     Cliente.valorTotalComprado = 0;
     Cliente.qtdeCompras = 0;
     strcpy(Cliente.nomeCliente, "fernandinho");
+    fwrite(&Cliente, sizeof(tpCliente), 1, PtrClientes);
+
+    fseek(PtrClientes, 0, 2);
+    Cliente.cpfCliente = 73959525028;
+    Cliente.ativo = 1;
+    strcpy(Cliente.nomeCliente, "Vitinho");
+    Cliente.qtdeCompras = 1;
+    Cliente.valorTotalComprado = 10000;
     fwrite(&Cliente, sizeof(tpCliente), 1, PtrClientes);
 
     // fornecedores
@@ -1678,6 +1773,9 @@ void executar(void)
                 case 'E':
                     relatorioProdutos();
                     break;
+                case 'F':
+                    ordenarProdutosPorPreco();
+                    break;
                 }
             } while (opMenuProdutos != 27);
             break;
@@ -1717,7 +1815,7 @@ void executar(void)
                 switch (opMenuClientes)
                 {
                 case 'A':
-                    cadastroCliente();
+                    cadastroClienteInsercaoDireta();
                     break;
                 case 'B':
                     consultaClientes();
