@@ -87,6 +87,7 @@ void aumentoDePreco();
 
 // #FUNCOES DE CLIENTES#
 int buscaClientesExaustiva(FILE *PtrClintes, long long int cpfCli);
+int bucaClientesBinaria(FILE *PtrClintes, long long int cpfCli);
 void cadastroClienteInsercaoDireta(void);
 void consultaClientes(void);
 // exclusaoClientes();
@@ -1254,6 +1255,34 @@ int buscaClientesExaustiva(FILE *PtrClintes, long long int cpfCli)
         return -1;
 }
 
+int bucaClientesBinaria(FILE *PtrClintes, long long int cpfCli)
+{
+
+    fseek(PtrClintes, 0, 2);
+    int fim = (ftell(PtrClintes) / sizeof(tpCliente)) - 1, inicio = 0;
+    printf("FIM %d, INICIO %d", fim, inicio);
+    while (inicio <= fim)
+    {
+        int meio = (inicio + fim) / 2;
+        fseek(PtrClintes, meio * sizeof(tpCliente), 0);
+        tpCliente cliente;
+        fread(&cliente, sizeof(tpCliente), 1, PtrClintes);
+        if (cliente.cpfCliente == cpfCli)
+        {
+            return ftell(PtrClintes) - sizeof(tpCliente);
+        }
+        else if (cliente.cpfCliente < cpfCli)
+        {
+            inicio = meio + 1;
+        }
+        else
+        {
+            fim = meio - 1;
+        }
+    }
+    return -1;
+}
+
 void cadastroClienteInsercaoDireta(void)
 {
     tpCliente cliente, clienteAux;
@@ -1342,7 +1371,6 @@ void consultaClientes(void)
                 printf("\nNome do cliente: %s\n", R.nomeCliente);
                 printf("\nQuantidade de compras feitas: %d\n", R.qtdeCompras);
                 printf("\nValor total comprado: %.2f\n", R.valorTotalComprado);
-                getch();
             }
             printf("\nDigite o cpf do cliente ou (0) para sair: \n");
             scanf("%lld", &R.cpfCliente);
