@@ -66,7 +66,6 @@ int buscaVendaExaustiva(FILE *ptr, int codVenda);
 void relatorioDeVendas(void);
 void exclusaoLogicaVendas(void);
 int buscaVendaEmVendaProd(FILE *ptrVendasProd, int codVenda);
-// exclusaoDeVendas();
 
 // #FUNCOES DE PRODUTOS#
 int buscaProdutoExaustiva(FILE *ptr, int codProd);
@@ -2262,6 +2261,7 @@ void executar(void)
         }
 
     } while (opMenuPrincipal != 27);
+
 }
 
 int main()
@@ -2278,9 +2278,8 @@ int main()
 // metodos de ordenacao
 // Seleção Direta (Selection Sort): Fornecedores
 
-// exclusao fisica ao encerar programa
-// exclusao logica quando o usuario solicitar
-// exclusao logica de vendas feito
-// exclusao logica de fornecedores incompleta 
-// exclusao logica de clientes nao feita
-// exclusap logica de produtos incompleta 
+// exclusao logica de fornecedores semi feita 
+//arrumar efetuar venda
+// exclusao logica de produtos incompleta 
+
+//exclusao fisica de tudo 
