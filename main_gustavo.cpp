@@ -92,6 +92,7 @@ void exclusaoLogicaFornecedor(void);
 void aumentoDePreco(void);
 int buscaProdVendasProd(FILE *ptr, int codProd);
 int buscaFornecedorExaustivaSentinela(FILE *ptr, int codForn);
+void ordenaFornecedorSelecaoDireta(void);
 
 // #FUNCOES DE CLIENTES#
 int buscaClientesExaustiva(FILE *PtrClintes, long long int cpfCli);
@@ -172,8 +173,10 @@ char menuFornecedores(void)
     gotoxy(2, 13);
     printf("[F] Aumento de precos de produtos");
     gotoxy(2, 14);
-    printf("[ESC] Voltar para menu principal");
+    printf("[G] Ordenar fornecedores Selecao Direta");
     gotoxy(2, 15);
+    printf("[ESC] Voltar para menu principal");
+    gotoxy(2, 16);
     printf("Opcao desejada: ");
     return toupper(getche());
 }
@@ -410,22 +413,44 @@ void efetuarVenda(void)
                     char confirma = toupper(getche());
                     if (confirma == 'S')
                     {
+                        cliente.qtdeCompras += 1;
+                        cliente.valorTotalComprado += total;
+                        if (posCliente == -1)
+                        {
+                            tpCliente clienteAux;
+                            fseek(ptrClientes, 0, 2);
+                            int qtdeClientes = (ftell(ptrClientes) / sizeof(tpCliente)) - 1;
+                            if (qtdeClientes < 0)
+                            {
+                                fwrite(&cliente, sizeof(tpCliente), 1, ptrClientes);
+                            }
+                            else
+                            {
+                                fseek(ptrClientes, qtdeClientes * sizeof(tpCliente), 0);
+                                fread(&clienteAux, sizeof(tpCliente), 1, ptrClientes);
+                                while (qtdeClientes >= 0 && cliente.cpfCliente < clienteAux.cpfCliente)
+                                {
+                                    fseek(ptrClientes, qtdeClientes * sizeof(tpCliente), 0);
+                                    fwrite(&cliente, sizeof(tpCliente), 1, ptrClientes);
+                                    fseek(ptrClientes, (qtdeClientes + 1) * sizeof(tpCliente), 0);
+                                    fwrite(&clienteAux, sizeof(tpCliente), 1, ptrClientes);
+                                    qtdeClientes--;
+                                    fseek(ptrClientes, qtdeClientes * sizeof(tpCliente), 0);
+                                    fread(&clienteAux, sizeof(tpCliente), 1, ptrClientes);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // printf("\nENTROU NA CRIACAO QUE ACHOU");
+                            fseek(ptrClientes, posCliente, 0);
+                            fwrite(&cliente, sizeof(tpCliente), 1, ptrClientes);
+                        }
+
                         time_t agora;
                         struct tm *infoTempo;
                         time(&agora);
                         infoTempo = localtime(&agora);
-                        if (posCliente == -1)
-                        {
-                            fseek(ptrClientes, 0, 2);
-                        }
-                        else
-                        {
-                            fseek(ptrClientes, posCliente, 0);
-                        }
-                        cliente.qtdeCompras += 1;
-                        cliente.valorTotalComprado += total;
-                        fwrite(&cliente, sizeof(tpCliente), 1, ptrClientes);
-
                         tpVenda venda;
                         fseek(ptrVendas, -sizeof(tpVenda), 2);
                         fread(&venda, sizeof(tpVenda), 1, ptrVendas);
@@ -776,7 +801,7 @@ void cadastroProdutos(void)
             }
             else
             {
-                printf("\nCodigo de fornecedor: ");
+                printf("Codigo de fornecedor: ");
                 scanf("%d", &prod.codForn);
                 int posForn = buscaFornecedorExaustiva(ptrFornecedores, prod.codForn);
                 if (posForn == -1)
@@ -792,17 +817,17 @@ void cadastroProdutos(void)
                     forn.ativo = 1;
                     printf("\nRetornando para cadastro do produto");
                 }
-                printf("\nDigite a descricao: ");
+                printf("Digite a descricao: ");
                 fflush(stdin);
                 gets(prod.descricao);
-                printf("\nDigite o estoque: ");
+                printf("Digite o estoque: ");
                 scanf("%d", &prod.estoque);
-                printf("\nDigite o preco: ");
+                printf("Digite o preco: ");
                 scanf("%f", &prod.preco);
                 printf("Digite a data de validade: ");
                 scanf("%d/%d/%d", &prod.data.d, &prod.data.m, &prod.data.a);
                 prod.ativo = 1;
-                printf("\nConfirma o cadastro do produto? (S/N): ");
+                printf("Confirma o cadastro do produto? (S/N): ");
                 char confirma = toupper(getche());
                 if (confirma == 'S')
                 {
@@ -975,7 +1000,10 @@ void alteracaoProdutos(void)
 
 void relatorioProdutos(int veioDeVendas = 0)
 {
-    system("cls");
+    if (veioDeVendas == 0)
+    {
+        system("cls");
+    }
     FILE *ptrProdutos = fopen("produtos.bat", "rb+");
     FILE *ptrFornecedores = fopen("fornecedores.bat", "rb+");
 
@@ -1079,39 +1107,95 @@ void ordenarProdutosPorPreco(void)
 
 void exclusaoDeProdutoLogica(void)
 {
+    system("cls");
     FILE *ptrProd = fopen("produtos.bat", "rb+");
-    tpProduto Registro;
+    FILE *ptrVendasProdutos = fopen("vendas_produtos.bat", "rb+");
+    FILE *ptrVendas = fopen("vendas.bat", "rb+");
+    FILE *ptrClientes = fopen("clientes.bat", "rb+");
 
-    printf("\nDigite o codido do produto a excluir: \n");
-    scanf("%d", &Registro.codProd);
-
-    while (!feof(ptrProd) && Registro.codProd > 0)
-        ;
+    if (ptrProd == NULL || ptrVendasProdutos == NULL || ptrVendas == NULL || ptrClientes == NULL)
     {
-        int pos = buscaProdutoExaustiva(ptrProd, Registro.codProd);
-        if (pos == -1)
-        {
-            printf("\nCliente inexistente!\n");
-            printf("Digite [ESC] para sair: ");
-            getch();
-        }
-        else
-        {
-            fseek(ptrProd, pos, 0);
-            fread(&Registro, sizeof(tpProduto), 1, ptrProd);
-            printf("Codigo do produto: %d\n", Registro.codForn);
-            printf("Preco: %.2f\n", Registro.preco);
-            printf("Descricao: %s\n", Registro.descricao);
-            printf("Data: %d/%d/%d\n", Registro.data.d, Registro.data.m, Registro.data.a);
-            printf("\nConfirma exclusao (S/N): ");
-            if (toupper(getche()) == 'S')
-            {
-                fseek(ptrProd, pos, 0);
-                Registro.ativo = 0;
-                fwrite(&Registro, sizeof(tpProduto), 1, ptrProd);
-            }
-        }
+        printf("\nErro na abertura de arquivo, digite algo para sair...\n");
+        getche();
     }
+    else
+    {
+        tpProduto Registro;
+        printf("\nDigite o codido do produto a excluir: ");
+        scanf("%d", &Registro.codProd);
+
+        while (!feof(ptrProd) && Registro.codProd > 0)
+        {
+            int posProd = buscaProdutoExaustiva(ptrProd, Registro.codProd);
+            if (posProd == -1)
+            {
+                printf("\nProduto nao encontrado\n");
+            }
+            else
+            {
+                fseek(ptrProd, posProd, 0);
+                fread(&Registro, sizeof(tpProduto), 1, ptrProd);
+                printf("Codigo do produto: %d\n", Registro.codProd);
+                printf("Preco: R$ %.2f\n", Registro.preco);
+                printf("Descricao: %s\n", Registro.descricao);
+                printf("Data: %d/%d/%d\n", Registro.data.d, Registro.data.m, Registro.data.a);
+                printf("\nConfirma exclusao (S/N): ");
+                if (toupper(getche()) == 'S')
+                {
+                    int posVendProd = buscaProdEmVendasProdutos(ptrVendasProdutos, Registro.codProd);
+                    while (posVendProd != -1)
+                    {
+                        fseek(ptrVendasProdutos, posVendProd, 0);
+                        tpVendasProdutos vend_prod;
+                        fread(&vend_prod, sizeof(tpVendasProdutos), 1, ptrVendasProdutos);
+                        vend_prod.ativo = 0;
+
+                        int posVenda = buscaVendaExaustiva(ptrVendas, vend_prod.codVenda);
+                        fseek(ptrVendas, posVenda, 0);
+                        tpVenda venda;
+                        fread(&venda, sizeof(tpVenda), 1, ptrVendas);
+
+                        venda.totalVendas -= vend_prod.qtde * vend_prod.valorUnitario;
+                        if (!(venda.totalVendas > 0))
+                        {
+                            venda.ativo = 0;
+                        }
+
+                        int posClienteDaVenda = buscaClientesExaustiva(ptrClientes, venda.cpfCliente);
+                        fseek(ptrClientes, posClienteDaVenda, 0);
+                        tpCliente clienteDaVenda;
+                        fread(&clienteDaVenda, sizeof(tpCliente), 1, ptrClientes);
+                        clienteDaVenda.valorTotalComprado -= vend_prod.qtde * vend_prod.valorUnitario;
+
+                        fseek(ptrVendasProdutos, posVendProd, 0);
+                        fwrite(&vend_prod, sizeof(tpVendasProdutos), 1, ptrVendasProdutos);
+                        fseek(ptrVendas, posVenda, 0);
+                        fwrite(&venda, sizeof(tpVenda), 1, ptrVendas);
+                        fseek(ptrClientes, posClienteDaVenda, 0);
+                        fwrite(&clienteDaVenda, sizeof(tpCliente), 1, ptrClientes);
+
+                        posVendProd = buscaProdEmVendasProdutos(ptrVendasProdutos, Registro.codProd);
+                    }
+                    fseek(ptrProd, posProd, 0);
+                    Registro.ativo = 0;
+                    fwrite(&Registro, sizeof(tpProduto), 1, ptrProd);
+                }
+                else
+                {
+                    printf("\nExclusao abortada!\n");
+                }
+            }
+            printf("\nDigite o codido do produto a excluir, digite 0 para sair: ");
+            scanf("%d", &Registro.codProd);
+        }
+
+        fclose(ptrProd);
+        fclose(ptrVendasProdutos);
+        fclose(ptrVendas);
+        fclose(ptrClientes);
+    }
+    system("cls");
+    exibirMoldura();
 }
 
 int buscaProdEmVendasProdutos(FILE *ptrVendasProd, int codProd)
@@ -1288,8 +1372,9 @@ void consultaFornecedores(void)
             printf("\nDigite outro codigo de fornecedor para continuar consulta, digite 0 para encerrar: ");
             scanf("%d", &forn.codForn);
         }
+        fclose(ptrFornecedores);
     }
-    fclose(ptrFornecedores);
+
     system("cls");
     exibirMoldura();
 }
@@ -1490,7 +1575,7 @@ void exclusaoLogicaFornecedor(void)
     FILE *ptrProdutos = fopen("produtos.bat", "rb+");
     FILE *ptrVendas = fopen("vendas.bat", "rb+");
     FILE *ptrVendasProd = fopen("vendas_produtos.bat", "rb+");
-    FILE *ptrClientes = fopen("vendas_produtos.bat", "rb+");
+    FILE *ptrClientes = fopen("clientes.bat", "rb+");
 
     tpFornecedor Reg;
 
@@ -1561,17 +1646,14 @@ void exclusaoLogicaFornecedor(void)
                                 fseek(ptrClientes, posClienteDaVenda, 0);
                                 tpCliente clienteDaVenda;
                                 fread(&clienteDaVenda, sizeof(tpCliente), 1, ptrClientes);
-                                printf("VALOR TOTAL COMPRADO DO CLIENTE antes %d", clienteDaVenda.valorTotalComprado);
                                 clienteDaVenda.valorTotalComprado -= vend_prod.qtde * vend_prod.valorUnitario;
-                                printf("VALOR TOTAL COMPRADO DO CLIENTE depois %d", clienteDaVenda.valorTotalComprado);
+
                                 fseek(ptrVendasProd, posVendProd, 0);
                                 fwrite(&vend_prod, sizeof(tpVendasProdutos), 1, ptrVendasProd);
                                 fseek(ptrVendas, posVenda, 0);
                                 fwrite(&venda, sizeof(tpVenda), 1, ptrVendas);
                                 fseek(ptrClientes, posClienteDaVenda, 0);
                                 fwrite(&clienteDaVenda, sizeof(tpCliente), 1, ptrClientes);
-
-                                // SAI LIDO
                                 posVendProd = buscaProdEmVendasProdutos(ptrVendasProd, v[i].codProd);
                             }
                             int posProd = buscaProdutoExaustiva(ptrProdutos, v[i].codProd);
@@ -1614,6 +1696,71 @@ int buscaProdVendasProd(FILE *ptr, int codProd)
         return ftell(ptr) - sizeof(tpCliente);
     else
         return -1;
+}
+
+int posicaoMaiorSelecaoDireta(FILE *ptr, int quantForn)
+{
+    int posMaior = 0;
+    tpFornecedor maior, aux;
+    fseek(ptr, 0, 0);
+    fread(&maior, sizeof(tpFornecedor), 1, ptr);
+    fseek(ptr, sizeof(tpFornecedor), 0);
+    fread(&aux, sizeof(tpFornecedor), 1, ptr);
+    while (!feof(ptr) && ftell(ptr) < quantForn * sizeof(tpFornecedor))
+    {
+        if (maior.codForn < aux.codForn)
+        {
+            maior = aux;
+            posMaior = ftell(ptr) - sizeof(tpFornecedor);
+        }
+        fread(&aux, sizeof(tpFornecedor), 1, ptr);
+    }
+    return posMaior;
+}
+
+void ordenaFornecedorSelecaoDireta(void)
+{
+    system("cls");
+    FILE *ptrFornecedores = fopen("fornecedores.bat", "rb+");
+
+    if (ptrFornecedores == NULL)
+    {
+        printf("\nErro na abertura de arquivo!\n");
+    }
+    else
+    {
+        fseek(ptrFornecedores, 0, 2);
+        int quantForn = ftell(ptrFornecedores) / sizeof(tpFornecedor);
+        if (quantForn == 0)
+        {
+            printf("\nNao ha fornecedores para ordenar, digite algo para sair...\n");
+            getche();
+        }
+        else
+        {
+            int posMaior;
+            tpFornecedor maior, aux;
+            while (quantForn > 0)
+            {
+                posMaior = posicaoMaiorSelecaoDireta(ptrFornecedores, quantForn);
+                if (posMaior < (quantForn - 1) * sizeof(tpFornecedor))
+                {
+                    fseek(ptrFornecedores, posMaior, 0);
+                    fread(&maior, sizeof(tpFornecedor), 1, ptrFornecedores);
+                    fseek(ptrFornecedores, (quantForn - 1) * sizeof(tpFornecedor), 0);
+                    fread(&aux, sizeof(tpFornecedor), 1, ptrFornecedores);
+                    fseek(ptrFornecedores, posMaior, 0);
+                    fwrite(&aux, sizeof(tpFornecedor), 1, ptrFornecedores);
+                    fseek(ptrFornecedores, (quantForn - 1) * sizeof(tpFornecedor), 0);
+                    fwrite(&maior, sizeof(tpFornecedor), 1, ptrFornecedores);
+                }
+                quantForn--;
+            }
+        }
+        fclose(ptrFornecedores);
+    }
+    system("cls");
+    exibirMoldura();
 }
 
 // #FUNÇÕES DE CLIENTES
@@ -1693,19 +1840,27 @@ void cadastroClienteInsercaoDireta(void)
                 printf("\nConfirma cadastro (S/N): ");
                 if (toupper(getche()) == 'S')
                 {
+                    tpCliente clienteAux;
                     fseek(ptr, 0, 2);
                     int qtdeClientes = (ftell(ptr) / sizeof(tpCliente)) - 1;
-                    fseek(ptr, qtdeClientes * sizeof(tpCliente), 0);
-                    fread(&clienteAux, sizeof(tpCliente), 1, ptr);
-                    while (qtdeClientes >= 0 && cliente.cpfCliente < clienteAux.cpfCliente)
+                    if (qtdeClientes < 0)
+                    {
+                        fwrite(&cliente, sizeof(tpCliente), 1, ptr);
+                    }
+                    else
                     {
                         fseek(ptr, qtdeClientes * sizeof(tpCliente), 0);
-                        fwrite(&cliente, sizeof(tpCliente), 1, ptr);
-                        fseek(ptr, (qtdeClientes + 1) * sizeof(tpCliente), 0);
-                        fwrite(&clienteAux, sizeof(tpCliente), 1, ptr);
-                        qtdeClientes--;
-                        fseek(ptr, qtdeClientes * sizeof(tpCliente), 0);
                         fread(&clienteAux, sizeof(tpCliente), 1, ptr);
+                        while (qtdeClientes >= 0 && cliente.cpfCliente < clienteAux.cpfCliente)
+                        {
+                            fseek(ptr, qtdeClientes * sizeof(tpCliente), 0);
+                            fwrite(&cliente, sizeof(tpCliente), 1, ptr);
+                            fseek(ptr, (qtdeClientes + 1) * sizeof(tpCliente), 0);
+                            fwrite(&clienteAux, sizeof(tpCliente), 1, ptr);
+                            qtdeClientes--;
+                            fseek(ptr, qtdeClientes * sizeof(tpCliente), 0);
+                            fread(&clienteAux, sizeof(tpCliente), 1, ptr);
+                        }
                     }
                 }
                 else
@@ -1746,7 +1901,7 @@ void consultaClientes(void)
                 printf("\nCPF do cliente: %lld\n", R.cpfCliente);
                 printf("\nNome do cliente: %s\n", R.nomeCliente);
                 printf("\nQuantidade de compras feitas: %d\n", R.qtdeCompras);
-                printf("\nValor total comprado: %.2f\n", R.valorTotalComprado);
+                printf("\nValor total comprado: R$ %.2f\n", R.valorTotalComprado);
             }
             printf("\nDigite o cpf do cliente ou (0) para sair: \n");
             scanf("%lld", &R.cpfCliente);
@@ -1781,7 +1936,7 @@ void relatorioClientes(void)
                 printf("\nNome: ");
                 puts(R.nomeCliente);
                 printf("Quantidade de compras: %d", R.qtdeCompras);
-                printf("\nValor total comprado: %.2f", R.valorTotalComprado);
+                printf("\nValor total comprado: R$ %.2f", R.valorTotalComprado);
                 fread(&R, sizeof(tpCliente), 1, ptr);
             }
         }
@@ -1908,17 +2063,18 @@ void insercaoAutomDeDados(void)
     fwrite(&Cliente, sizeof(tpCliente), 1, PtrClientes);
 
     // fornecedores
-    fseek(PtrFornecedors, 0, 2);
-    strcpy(Fornecedor.nomeForn, "Joaozinho da feira");
-    strcpy(Fornecedor.cidadeForn, "Anhumas");
-    Fornecedor.codForn = 1;
-    Fornecedor.ativo = 1;
-    fwrite(&Fornecedor, sizeof(tpFornecedor), 1, PtrFornecedors);
 
     fseek(PtrFornecedors, 0, 2);
     strcpy(Fornecedor.nomeForn, "Osmar da oficina");
     strcpy(Fornecedor.cidadeForn, "Presidente Prudente");
     Fornecedor.codForn = 2;
+    Fornecedor.ativo = 1;
+    fwrite(&Fornecedor, sizeof(tpFornecedor), 1, PtrFornecedors);
+
+    fseek(PtrFornecedors, 0, 2);
+    strcpy(Fornecedor.nomeForn, "Joaozinho da feira");
+    strcpy(Fornecedor.cidadeForn, "Anhumas");
+    Fornecedor.codForn = 1;
     Fornecedor.ativo = 1;
     fwrite(&Fornecedor, sizeof(tpFornecedor), 1, PtrFornecedors);
 
@@ -2143,9 +2299,9 @@ void executar(void)
                 case 'B':
                     consultaProdutos();
                     break;
-                // case 'C':
-                //     exclusaoProdutos();
-                //     break;
+                case 'C':
+                    exclusaoDeProdutoLogica();
+                    break;
                 case 'D':
                     alteracaoProdutos();
                     break;
@@ -2182,6 +2338,9 @@ void executar(void)
                     break;
                 case 'F':
                     aumentoDePreco();
+                    break;
+                case 'G':
+                    ordenaFornecedorSelecaoDireta();
                     break;
                 }
             } while (opMenuFornecedores != 27);
