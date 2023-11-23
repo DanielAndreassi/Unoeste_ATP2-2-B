@@ -78,8 +78,6 @@ void ordenarProdutosPorPreco(void);
 void exclusaoDeProdutoLogica(void);
 int buscaProdEmVendasProdutos(FILE *ptrVendasProd, int codProd);
 
-// exclusaoProdutos();
-
 // #FUNCOES DE FORNECEDORES#
 int buscaFornecedorExaustiva(FILE *ptr, int codForn);
 int buscaProdutoPorFornecedor(FILE *ptr, int codForn);
@@ -109,6 +107,9 @@ int jaEstaContidoNoVetor(tpProduto v[100], int codProd, int tl);
 void auxAcharProdutosDoFornecedor(int &tl, FILE *ptr, int codForn, tpProduto produtos[50]);
 void insercaoAutomDeDados(void);
 void executar(void);
+void criar (void);
+void exclusaoFisica (void);
+
 
 void moldura(int CI, int LI, int CF, int LF, int CorT, int CorF)
 {
@@ -682,8 +683,7 @@ void exclusaoLogicaVendas(void)
             int pos = buscaVendaExaustiva(ptrVenda, regVenda.codVenda);
             if (pos == -1)
             {
-                printf("\nVenda inexistente!!\n");
-                printf("Tecle algo para sair... ");
+                printf("\nvenda inexistente!!\n");
                 getch();
             }
             else
@@ -694,6 +694,7 @@ void exclusaoLogicaVendas(void)
                 printf("\nCPF do cliente: %lld\n", regVenda.cpfCliente);
                 printf("\nData da venda %d/%d/%d", regVenda.data.d, regVenda.data.m, regVenda.data.a);
                 printf("\nDeseja mesmo excluir essa venda (S/N): ");
+
                 if (toupper(getche()) == 'S')
                 {
                     regVenda.ativo = 0;
@@ -723,17 +724,15 @@ void exclusaoLogicaVendas(void)
                     fseek(ptrProds, pos, 0);
                     fwrite(&regProds, sizeof(tpProduto), 1, ptrProds);
                     printf("\nVenda deletada com sucesso!!\n");
-                    printf("Tecle algo para sair... ");
                     getch();
                 }
                 else
                 {
                     printf("\nVenda abortada com sucesso!!\n");
-                    printf("Tecle algo para sair... ");
                     getch();
                 }
             }
-            printf("\nDigite outro codigo ou (0) para sair: ");
+            printf("digite outro codigo ou (0) para sair: ");
             scanf("%d", &regVenda.codVenda);
         }
         fclose(ptrClientes);
@@ -741,6 +740,7 @@ void exclusaoLogicaVendas(void)
         fclose(ptrVenda);
         fclose(ptrVendasProds);
     }
+    
     system("cls");
     exibirMoldura();
 }
@@ -814,11 +814,11 @@ void cadastroProdutos(void)
                     printf("Digite o nome do fornecedor: ");
                     fflush(stdin);
                     gets(forn.nomeForn);
-                    printf("Digite a cidade do fornecedor: ");
+                    printf("\nDigite a cidade do fornecedor: ");
                     fflush(stdin);
                     gets(forn.cidadeForn);
                     forn.ativo = 1;
-                    printf("Retornando para cadastro do produto\n");
+                    printf("\nRetornando para cadastro do produto");
                 }
                 printf("Digite a descricao: ");
                 fflush(stdin);
@@ -952,7 +952,7 @@ void alteracaoProdutos(void)
                 printf("\n\nNova descricao: ");
                 fflush(stdin);
                 gets(prod.descricao);
-                printf("Novo estoque: ");
+                printf("\nNovo estoque: ");
                 scanf("%d", &prod.estoque);
                 printf("\nNovo preco: R$ ");
                 scanf("%f", &prod.preco);
@@ -1313,10 +1313,10 @@ void cadastroFornecedores(void)
             }
             else
             {
-                printf("Digite o nome do fornecedor: ");
+                printf("\nDigite o nome do fornecedor: ");
                 fflush(stdin);
                 gets(forn.nomeForn);
-                printf("Digite a cidade do fornecedor: ");
+                printf("\nDigite a cidade do fornecedor: ");
                 fflush(stdin);
                 gets(forn.cidadeForn);
                 forn.ativo = 1;
@@ -1568,7 +1568,7 @@ void aumentoDePreco(void)
             }
         }
         printf("Digite o codigo do fornecedor ou (0) pra sair\n");
-        scanf("%d", &regForn.codForn);
+        scanf("%d",&regForn.codForn);
     }
     fclose(ptrForn);
     fclose(ptrProd);
@@ -1705,14 +1705,14 @@ int buscaProdVendasProd(FILE *ptr, int codProd)
 
 int posicaoMaiorSelecaoDireta(FILE *ptr, int quantForn)
 {
-    int posMaior = 0, i = 1;
+    int posMaior = 0,i=1;
     tpFornecedor maior, aux;
     fseek(ptr, 0, 0);
     fread(&maior, sizeof(tpFornecedor), 1, ptr);
     while (i < quantForn)
     {
-        fseek(ptr, i * sizeof(tpFornecedor), 0);
-        fread(&aux, sizeof(tpFornecedor), 1, ptr);
+        fseek(ptr,i * sizeof(tpFornecedor),0);
+        fread(&aux,sizeof(tpFornecedor),1,ptr);
         if (maior.codForn < aux.codForn)
         {
             maior = aux;
@@ -1945,12 +1945,12 @@ void relatorioClientes(void)
                 puts(R.nomeCliente);
                 printf("Quantidade de compras: %d", R.qtdeCompras);
                 printf("\nValor total comprado: R$ %.2f", R.valorTotalComprado);
+                fread(&R, sizeof(tpCliente), 1, ptr);
             }
-            fread(&R, sizeof(tpCliente), 1, ptr);
         }
+        fclose(ptr);
         printf("\nDigite algo para sair: ");
         getch();
-        fclose(ptr);
     }
 
     system("cls");
@@ -2154,6 +2154,20 @@ int buscaCodVendaEmVendaProd(FILE *ptr, int codVenda)
 }
 
 // #FUNÇÕES AUXILIARES
+void criar (void)
+{
+    FILE *cliente = fopen("clientes.bat","ab");
+    FILE *Fornecedor = fopen("fornecedores.bat","ab");
+    FILE *vendasProd = fopen("vendas_produtos.bat","ab");
+    FILE *vendas = fopen("vendas.bat","ab");
+    FILE *produtos = fopen("produtos.bat","ab");
+
+    fclose(cliente);
+    fclose(Fornecedor);
+    fclose(produtos);
+    fclose(vendas);
+    fclose(vendasProd);
+}
 
 int jaEstaContidoNoVetor(tpProduto v[100], int codProd, int tl)
 {
@@ -2418,9 +2432,110 @@ void insercaoAutomDeDados(void)
     fclose(PtrVendas_Produtos);
 }
 
+void exclusaoFisica(void)
+{
+    FILE *ptrVendas = fopen("vendas.bat","rb");
+    FILE *ptrClientes = fopen("clientes.bat","rb");
+    FILE *ptrFornecedores = fopen("fornecedores.bat","rb");
+    FILE *ptrVendasProd = fopen("vendas_produtos.bat","rb");
+    FILE *ptrProd = fopen("produtos.bat","rb");
+
+    tpFornecedor regFornecedor;
+    tpCliente regCliente;
+    tpVenda regVenda;
+    tpVendasProdutos regVendasProd;
+    tpProduto regProdutos;
+    
+    if(ptrClientes != NULL)
+    {
+        rewind(ptrClientes);
+        FILE *PtrTempCliente = fopen("temp1.bat","wb");
+		fread(&regCliente,sizeof(tpCliente),1,ptrClientes);
+		while (!feof(ptrClientes))
+		{
+			if(regCliente.ativo == 1) fwrite(&regCliente,sizeof(tpCliente),1,PtrTempCliente);					
+			
+            fread(&regCliente,sizeof(tpCliente),1,ptrClientes);
+		}
+		fclose(ptrClientes);
+		fclose(PtrTempCliente);
+		remove("clientes.bat");
+		rename("temp1.bat","clientes.bat");
+    }
+    //
+    if(ptrFornecedores != NULL)
+    {
+        rewind(ptrFornecedores);
+        FILE *ptrTempFornecedores=fopen("temp2.bat","wb");
+        fread(&regFornecedor,sizeof(tpFornecedor),1,ptrFornecedores);
+        while(!feof(ptrFornecedores))
+        {
+            if(regFornecedor.ativo == 1) fwrite(&regFornecedor,sizeof(tpFornecedor),1,ptrTempFornecedores);
+
+            fread(&regFornecedor,sizeof(tpFornecedor),1,ptrFornecedores);
+        }
+        fclose(ptrFornecedores);
+        fclose(ptrTempFornecedores);
+        remove("fornecedores.bat");
+        rename("temp2.bat","fornecedores.bat");
+    }
+    //
+    if(ptrVendas != NULL)
+    {
+        rewind(ptrVendas);
+        FILE *ptrTempVendas=fopen("temp3.bat","wb");
+        fread(&regVenda,sizeof(tpVenda),1,ptrVendas);
+        while(!feof(ptrVendas))
+        {
+            if(regVenda.ativo == 1) fwrite(&regVenda,sizeof(tpVenda),1,ptrTempVendas);
+
+            fread(&regVenda,sizeof(tpVenda),1,ptrVendas);
+        }
+        fclose(ptrVendas);
+        fclose(ptrTempVendas);
+        remove("vendas.bat");
+        rename("temp3.bat","vendas.bat");
+    }
+    //
+    if(ptrVendasProd != NULL)
+    {
+        rewind(ptrVendasProd);
+        FILE *ptrTempVendasProd=fopen("temp4.bat","wb");
+        fread(&regVendasProd,sizeof(tpVendasProdutos),1,ptrVendasProd);
+        while(!feof(ptrVendasProd))
+        {
+            if(regVendasProd.ativo == 1) fwrite(&regVendasProd,sizeof(tpVendasProdutos),1,ptrTempVendasProd);
+
+            fread(&regVendasProd,sizeof(tpVendasProdutos),1,ptrVendasProd);
+        }
+        fclose(ptrVendasProd);
+        fclose(ptrTempVendasProd);
+        remove("vendas_produtos.bat");
+        rename("temp4.bat","vendas_produtos.bat");
+    }
+    //
+    if(ptrVendasProd != NULL)
+    {
+        rewind(ptrProd);
+        FILE *ptrTempProd=fopen("temp5.bat","wb");
+        fread(&regProdutos,sizeof(tpProduto),1,ptrProd);
+        while(!feof(ptrProd))
+        {
+            if(regProdutos.ativo == 1) fwrite(&regProdutos,sizeof(tpProduto),1,ptrTempProd);
+
+            fread(&regProdutos,sizeof(tpProduto),1,ptrProd);
+        }
+        fclose(ptrProd);
+        fclose(ptrTempProd);
+        remove("produtos.bat");
+        rename("temp5.bat","produtos.bat");
+    }
+}
+
 void executar(void)
 {
     exibirMoldura();
+    criar();
     char opMenuPrincipal;
     do
     {
@@ -2539,30 +2654,17 @@ void executar(void)
         }
 
     } while (opMenuPrincipal != 27);
+    exclusaoFisica();
+    system("cls");
+    textcolor(RED),gotoxy(20,12), printf("obrigado por usar nosso sistema!!");
+    textcolor(RED) ,gotoxy (21,13),printf("presione qualquer tecla para encerrar ");
+    getch();
 }
 
 int main()
 {
+    system("mode 80,25");
     executar();
     gotoxy(3, 26);
     return 0;
 }
-
-// oque falta:
-// para arranjos desordenados
-// Busca Exaustiva; a definir aonde sera usado
-// Busca Exaustiva com Sentinela. a definir aonde sera usado
-
-// Arranjos Ordenados
-// Busca Sequencial Indexada: Clientes
-// Busca Binária: Produtos
-
-// metodos de ordenacao
-// Inserção Direta (Insertion Sort): Produtos
-// Ordenação por Bolhas (Bubble Sort): Clientes
-// Seleção Direta (Selection Sort): Fornecedores
-
-// exclusao fisica ao encerar programa
-// exclusao logica quando o usuario solicitar
-
-// Relatorio de vendas(buiu)
