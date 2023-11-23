@@ -2156,11 +2156,17 @@ int buscaCodVendaEmVendaProd(FILE *ptr, int codVenda)
 // #FUNÇÕES AUXILIARES
 void criar (void)
 {
-    FILE *Cliente = fopen("clientes.dat","ab");
-    FILE *Forneceor = fopen("fornecedores.dat","ab");
-    FILE *vendasProd = fopen("vendas_produtos","ab");
+    FILE *cliente = fopen("clientes.bat","ab");
+    FILE *Fornecedor = fopen("fornecedores.bat","ab");
+    FILE *vendasProd = fopen("vendas_produtos.bat","ab");
     FILE *vendas = fopen("vendas.bat","ab");
     FILE *produtos = fopen("produtos.bat","ab");
+
+    fclose(cliente);
+    fclose(Fornecedor);
+    fclose(produtos);
+    fclose(vendas);
+    fclose(vendasProd);
 }
 
 int jaEstaContidoNoVetor(tpProduto v[100], int codProd, int tl)
@@ -2428,11 +2434,11 @@ void insercaoAutomDeDados(void)
 
 void exclusaoFisica(void)
 {
-    FILE *ptrVendas = fopen("vendas.bat","rb+");
-    FILE *ptrClientes = fopen("clientes.bat","rb+");
-    FILE *ptrFornecedores = fopen("fornecedores.bat","rb+");
-    FILE *ptrVendasProd = fopen("vendas_produtos","rb+");
-    FILE *ptrProd = fopen("produtos.bat","rb+");
+    FILE *ptrVendas = fopen("vendas.bat","rb");
+    FILE *ptrClientes = fopen("clientes.bat","rb");
+    FILE *ptrFornecedores = fopen("fornecedores.bat","rb");
+    FILE *ptrVendasProd = fopen("vendas_produtos.bat","rb");
+    FILE *ptrProd = fopen("produtos.bat","rb");
 
     tpFornecedor regFornecedor;
     tpCliente regCliente;
@@ -2443,7 +2449,7 @@ void exclusaoFisica(void)
     if(ptrClientes != NULL)
     {
         rewind(ptrClientes);
-        FILE *PtrTempCliente = fopen("Temp.bat","wb");
+        FILE *PtrTempCliente = fopen("temp1.bat","wb");
 		fread(&regCliente,sizeof(tpCliente),1,ptrClientes);
 		while (!feof(ptrClientes))
 		{
@@ -2453,31 +2459,31 @@ void exclusaoFisica(void)
 		}
 		fclose(ptrClientes);
 		fclose(PtrTempCliente);
-		remove("clientes.dat");
-		rename("Temp.dat","clientes.dat");
+		remove("clientes.bat");
+		rename("temp1.bat","clientes.bat");
     }
     //
     if(ptrFornecedores != NULL)
     {
         rewind(ptrFornecedores);
-        FILE *ptrTempFornecedores=fopen("Temp.bat","wb");
+        FILE *ptrTempFornecedores=fopen("temp2.bat","wb");
         fread(&regFornecedor,sizeof(tpFornecedor),1,ptrFornecedores);
-        while(!feof(ptrClientes))
+        while(!feof(ptrFornecedores))
         {
             if(regFornecedor.ativo == 1) fwrite(&regFornecedor,sizeof(tpFornecedor),1,ptrTempFornecedores);
 
-            fread(&regFornecedor,sizeof(tpFornecedor),1,ptrClientes);
+            fread(&regFornecedor,sizeof(tpFornecedor),1,ptrFornecedores);
         }
         fclose(ptrFornecedores);
         fclose(ptrTempFornecedores);
-        remove("fornecedores.dat");
-        rename("Temp.bat","fornecedores.bat");
+        remove("fornecedores.bat");
+        rename("temp2.bat","fornecedores.bat");
     }
     //
     if(ptrVendas != NULL)
     {
         rewind(ptrVendas);
-        FILE *ptrTempVendas=fopen("Temp.bat","wb");
+        FILE *ptrTempVendas=fopen("temp3.bat","wb");
         fread(&regVenda,sizeof(tpVenda),1,ptrVendas);
         while(!feof(ptrVendas))
         {
@@ -2487,14 +2493,14 @@ void exclusaoFisica(void)
         }
         fclose(ptrVendas);
         fclose(ptrTempVendas);
-        remove("vendas.dat");
-        rename("Temp.bat","vendas.bat");
+        remove("vendas.bat");
+        rename("temp3.bat","vendas.bat");
     }
     //
     if(ptrVendasProd != NULL)
     {
         rewind(ptrVendasProd);
-        FILE *ptrTempVendasProd=fopen("Temp.bat","wb");
+        FILE *ptrTempVendasProd=fopen("temp4.bat","wb");
         fread(&regVendasProd,sizeof(tpVendasProdutos),1,ptrVendasProd);
         while(!feof(ptrVendasProd))
         {
@@ -2504,14 +2510,14 @@ void exclusaoFisica(void)
         }
         fclose(ptrVendasProd);
         fclose(ptrTempVendasProd);
-        remove("vendas.dat");
-        rename("Temp.bat","vendas_produtos.bat");
+        remove("vendas_produtos.bat");
+        rename("temp4.bat","vendas_produtos.bat");
     }
     //
     if(ptrVendasProd != NULL)
     {
         rewind(ptrProd);
-        FILE *ptrTempProd=fopen("Temp.bat","wb");
+        FILE *ptrTempProd=fopen("temp5.bat","wb");
         fread(&regProdutos,sizeof(tpProduto),1,ptrProd);
         while(!feof(ptrProd))
         {
@@ -2521,16 +2527,15 @@ void exclusaoFisica(void)
         }
         fclose(ptrProd);
         fclose(ptrTempProd);
-        remove("produtos.dat");
-        rename("Temp.bat","produtos.bat");
+        remove("produtos.bat");
+        rename("temp5.bat","produtos.bat");
     }
-
 }
 
 void executar(void)
 {
-    criar();
     exibirMoldura();
+    criar();
     char opMenuPrincipal;
     do
     {
@@ -2649,8 +2654,8 @@ void executar(void)
         }
 
     } while (opMenuPrincipal != 27);
-    system("cls");
     exclusaoFisica();
+    system("cls");
     textcolor(RED),gotoxy(20,12), printf("obrigado por usar nosso sistema!!");
     textcolor(RED) ,gotoxy (21,13),printf("presione qualquer tecla para encerrar ");
     getch();
@@ -2663,5 +2668,3 @@ int main()
     gotoxy(3, 26);
     return 0;
 }
-
-//selection sort nao funfas
